@@ -1,0 +1,45 @@
+{
+  "expo": {
+    "name": "GastroBotApp",
+    "slug": "GastroBotApp",
+    "version": "1.0.0",
+    "orientation": "landscape",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "androidStatusBar": {
+      "hidden": true
+    },
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "infoPlist": {
+        "UIStatusBarHidden": true,
+        "UIViewControllerBasedStatusBarAppearance": false
+      }
+    },
+    "android": {
+      "statusBar": {
+        "barStyle": "light-content",
+        "backgroundColor": "#000000",
+        "hidden": true
+      },
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "package": "com.emmm.GastroBotApp"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "7c0fb33b-33c3-4465-86dd-d0e022ec83fa"
+      }
+    }
+  }
+}

@@ -35,5 +35,7 @@ yarn-error.*
 *.tsbuildinfo
 
 
-
+#extras
 C:/Users/jmbal/AppData/
+eas-json-guide.txt
+C:\Users\jmbal\PycharmProjects\React-Native Gastrobot\GastroBotApp\%ProgramData%

@@ -10,27 +10,47 @@ import { View, Button, TouchableOpacity, StyleSheet, Image, Text, Modal,Pressabl
 import Slider from '@react-native-community/slider';
 import { WebView } from 'react-native-webview';
 import { useState,useEffect } from 'react';
-import app from "./firebaseConfig"
-import { getDatabase, ref, set,update, push, get, onValue, off } from 'firebase/database';
-// import batt25 from './assets/icons/25.png'
-// import batt50 from './assets/icons/50.png'
-// import batt75 from './assets/icons/75.png'
-// import batt100 from './assets/icons/100.png'
+// import app from "./firebaseConfig"
+// import { getDatabase, ref, set,update, push, get, onValue, off } from 'firebase/database';
+import Constants from 'expo-constants';
+import axios from 'axios';
+
 
 
 export default function App() {
+  const [token, setToken] = useState(null);
+  const [data, setData] = useState(null);
+  const config = Constants.manifest?.extra || Constants.expoConfig?.extra;
+  const thingId = "28ade428-abc5-47d9-9e9f-b27d536e584a";//"d93de402-8b61-46de-bfb1-4a945667cf11"; // Replace with your Thing ID
+  //Property IDs
+  const batteryId = "0b1b5f2b-1d60-419e-b398-2e88ec6a601d"; 
+  const gasId = "50a0388c-993c-406d-a879-ae76adec7d89"; 
+  const containerId = "140b7cdc-cfb5-4675-a508-1e07995cae10"; 
+  const gasBattIsemptyObstacleId = "e04a3b13-23c7-4af2-9937-9466ab0c2ca7";
+
+  const camHorizontalId = "1f925c7d-d36b-4fc5-b3ff-fe8389432c66"; 
+  const camVerticalId = "b3fbb0b6-b5e7-4b6a-8a51-6c89225cd6e6"; 
+  const fanId = "71409cf7-8f4d-4dd9-b26c-fb99d230ec01"; 
+  const sprayId = "aa667363-f977-4354-9df3-e5b162df6d02"; 
+  const vacuumId = "a39cbd17-5284-4bd7-b9c2-98afe5c78f83"; 
+  const botMoveId = "4243c4b3-bc27-4bab-a223-03778745946c"; 
+  const obstacleId = "49ab0a00-9ca2-4ff8-9687-5398cd7afb26"; 
+
+  
+
   const [cameraPanHorizontal,setCameraPanHorizontal] = useState(90);
   const [cameraPanVertical,setCameraPanVertical] = useState(90);
   const [botMovement, setBotMovement] = useState(null);
   const [batteryLevel, setBatteryLevel] = useState(null);
   const [isContainerEmpty, setisContainerEmpty] = useState(null);
+  const [haveObstacle, setHaveObstacle] = useState(null);
 
   const [isVacuumOn,setIsVacuumOn] = useState(false);
   const [isSprayOn,setIsSprayOn] = useState(false);
   const [isFanOn,setIsFanOn] = useState(false);
   const [sprayOrFanImg,setSprayOrFanImg] = useState(require('./assets/icons/spray.png'));
 
-  const db = getDatabase(app);
+  // const db = getDatabase(app);
   const [batteryImg,setBatteryImg] = useState(require('./assets/icons/50.png'));
 
   const [modalImg,setModalImg] = useState(require('./assets/icons/warning.png'));
@@ -50,22 +70,126 @@ export default function App() {
     }
   };
 
-  useEffect(()=>{
-    // const movementRef = ref(db,"gastrobot_alpha_build/botMovement"); 
-    const batteryRef = ref(db,"gastrobot_alpha_build/batteryLevel");
-    const containerRef = ref(db,"gastrobot_alpha_build/isContainerEmpty");
-    const gasRef = ref(db,"gastrobot_alpha_build/gasLevel");
+  //Fetch token for arduino iot
+  useEffect(() => {
+    let refreshTimeout;
+    
+    async function fetchToken() {
+        const clientId = config?.clientId;
+        const clientSecret = config?.clientSecret;
 
-    const handleBatteryLevelChange = (snapshot) => {
-      const level = snapshot.val();
-      setBatteryLevel(level);
+        const options = {
+            method: 'POST',
+            url: 'https://api2.arduino.cc/iot/v1/clients/token',
+            headers: {
+                'content-type': 'application/x-www-form-urlencoded',
+            },
+            data: new URLSearchParams({
+                grant_type: 'client_credentials',
+                client_id: clientId,
+                client_secret: clientSecret,
+                audience: 'https://api2.arduino.cc/iot',
+                // scopes: ['iot:things:write', 'iot:things:read'] // Request the necessary scopes // Request the necessary scopes
+            }),
+        };
+
+        try {
+            const response = await axios(options);
+            const accessToken = response.data.access_token;
+            const expiresIn = response.data.expires_in;               // token life = 300 seconds (5 mins)
+            setToken(accessToken);
+
+            refreshTimeout = setTimeout(fetchToken, (expiresIn-60)*1000);       //refresh token in 4 mins      
+            // console.log(response.data.access_token);
+            console.log("new token created");
+
+        } catch (error) {
+            console.error('Error fetching token:', error);
+        }
+    }
+
+    fetchToken();
+
+    return ()=>{
+      clearTimeout(refreshTimeout);
+    }
+}, []);
+
+
+
+async function fetchData(propertyId) {
+  const options = {
+      method: 'GET',
+      url: `https://api2.arduino.cc/iot/v2/things/${thingId}/properties/${propertyId}`,
+      headers: {
+          'Authorization': `Bearer ${token}`,
+      }
+  };
+
+  try {
+      const response = await axios(options);
+      setData(response.data);
+      console.log("DATA name: "+response.data.name);
+      console.log("DATA last value: "+response.data.last_value);
+      console.log("DATA permission: "+response.data.permission);
+      return response.data.last_value;
+  } catch (error) {
+      console.error('Error fetching data:', error);
+      return '{}';
+  }
+}
+
+
+async function sendData(newValue,propertyId) {
+  const options = {
+      method: 'PUT',
+      url: `https://api2.arduino.cc/iot/v2/things/${thingId}/properties/${propertyId}/publish`,
+      headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+      },
+      data: JSON.stringify({
+          value: newValue,
+      }),
+  };
+
+  try {
+      const response = await axios(options);
+      console.log('Data sent successfully:', response.data);
+      // fetchData(propertyId); // Refresh data after sending
+
+  } catch (error) {
+    console.error('Error sending data:', error.response ? error.response.data : error.message);
+  }
+} 
+
+
+
+useEffect(() => {
+  if (token) {
+    const interval = setInterval(async () => {
+      const jsonString = await fetchData(gasBattIsemptyObstacleId); // Replace with your API call function
+      try {
+        console.log(jsonString);
+        const jsonData = JSON.parse(jsonString);
+        const batt = jsonData.batt;
+        const gas = jsonData.gas;
+        const isEmpty  = jsonData.container;
+        const haveObstacle = jsonData.obstacle;
+
+        console.log('Battery Level:', batt);
+        console.log('Gas Level:', gas);
+        console.log('Is Container Empty:', isEmpty);
+        console.log('haveObstacle:', haveObstacle);
+
+        setBatteryLevel(batt);
 
       // Update the image based on battery level
-      if (level > 75) {
+      if (batt > 75) {
         setBatteryImg(require('./assets/icons/100.png'));
-      } else if (level > 50) {
+      } else if (batt > 50) {
         setBatteryImg(require('./assets/icons/75.png'));
-      } else if (level > 25) {
+      } else if (batt > 25) {
         setBatteryImg(require('./assets/icons/50.png'));
       } else {
         setBatteryImg(require('./assets/icons/25.png'));
@@ -75,17 +199,18 @@ export default function App() {
         Vibration.vibrate(100);
         setModalVisible(true);
       }
-    };
 
-    // onValue(movementRef,(snapshot)=>{
-    //   setBotMovement(snapshot.val());
-    // })
 
-    onValue(batteryRef, handleBatteryLevelChange);
+      // For Gas Level
+      if(gas < 6){
+        setModalContent("No Gas Left, You Can Enter");
+        setIsRedModal(false);
+        setModalImg(require('./assets/icons/check.png'));
+        Vibration.vibrate(100);
+        setModalVisible(true);
+      }
 
-    onValue(containerRef,(snapshot)=>{
-      setisContainerEmpty(snapshot.val());
-      const isEmpty = snapshot.val()
+      // For IsEmpty
       if(isEmpty){
         setModalContent("Container Empty");
         setModalImg(require('./assets/icons/warning.png'));
@@ -93,95 +218,136 @@ export default function App() {
         Vibration.vibrate(100);
         setModalVisible(true);
       }
-    });
 
-    onValue(gasRef,(snapshot)=>{
-      setisContainerEmpty(snapshot.val());
-      const gasLevel = snapshot.val()
-      if(gasLevel < 6){
-        setModalContent("No Gas Left, You Can Enter");
-        setIsRedModal(false);
-        setModalImg(require('./assets/icons/check.png'));
+      // For haveObstacles
+      if(haveObstacle){
+        setModalContent("Obstacle present behind");
+        setModalImg(require('./assets/icons/warning.png'));
+        setIsRedModal(true);
         Vibration.vibrate(100);
         setModalVisible(true);
       }
-    });
-  
-    return () => {
-      // off(movementRef);
-      off(batteryRef);
-      off(containerRef);
-      off(gasRef);
-    }
 
-  },[db]);
+
+      
+      } catch (error) {
+        console.error('Error parsing JSON:', error);
+      }
+    }, 5000);
+
+    return () => clearInterval(interval); // Cleanup on unmount
+  }
+}, [token]);
+
+  // useEffect(()=>{
+  //   // const movementRef = ref(db,"gastrobot_alpha_build/botMovement"); 
+  //   const batteryRef = ref(db,"gastrobot_alpha_build/batteryLevel");
+  //   const containerRef = ref(db,"gastrobot_alpha_build/isContainerEmpty");
+  //   const gasRef = ref(db,"gastrobot_alpha_build/gasLevel");
+  //   const obstacleRef = ref(db,"gastrobot_alpha_build/haveObstacle");
+
+  //   const handleBatteryLevelChange = (snapshot) => {
+  //     const level = snapshot.val();
+  //     setBatteryLevel(level);
+
+  //     // Update the image based on battery level
+  //     if (level > 75) {
+  //       setBatteryImg(require('./assets/icons/100.png'));
+  //     } else if (level > 50) {
+  //       setBatteryImg(require('./assets/icons/75.png'));
+  //     } else if (level > 25) {
+  //       setBatteryImg(require('./assets/icons/50.png'));
+  //     } else {
+  //       setBatteryImg(require('./assets/icons/25.png'));
+  //       setModalContent("Low Battery");
+  //       setModalImg(require('./assets/icons/warning.png'));
+  //       setIsRedModal(true);
+  //       Vibration.vibrate(100);
+  //       setModalVisible(true);
+  //     }
+  //   };
+
+  //   // onValue(movementRef,(snapshot)=>{
+  //   //   setBotMovement(snapshot.val());
+  //   // })
+
+  //   onValue(batteryRef, handleBatteryLevelChange);
+
+  //   onValue(containerRef,(snapshot)=>{
+  //     setisContainerEmpty(snapshot.val());
+  //     const isEmpty = snapshot.val()
+  //     if(isEmpty){
+  //       setModalContent("Container Empty");
+  //       setModalImg(require('./assets/icons/warning.png'));
+  //       setIsRedModal(true);
+  //       Vibration.vibrate(100);
+  //       setModalVisible(true);
+  //     }
+  //   });
+
+  //   onValue(obstacleRef,(snapshot)=>{
+  //     setHaveObstacle(snapshot.val());
+  //     const haveObs = snapshot.val()
+  //     if(haveObs){
+  //       setModalContent("Obstacle present behind");
+  //       setModalImg(require('./assets/icons/warning.png'));
+  //       setIsRedModal(true);
+  //       Vibration.vibrate(100);
+  //       setModalVisible(true);
+  //     }
+  //   });
+
+  //   onValue(gasRef,(snapshot)=>{
+  //     setisContainerEmpty(snapshot.val());
+  //     const gasLevel = snapshot.val()
+  //     if(gasLevel < 6){
+  //       setModalContent("No Gas Left, You Can Enter");
+  //       setIsRedModal(false);
+  //       setModalImg(require('./assets/icons/check.png'));
+  //       Vibration.vibrate(100);
+  //       setModalVisible(true);
+  //     }
+  //   });
+  
+  //   return () => {
+  //     // off(movementRef);
+  //     off(batteryRef);
+  //     off(containerRef);
+  //     off(gasRef);
+  //   }
+
+  // },[db]);
 
 
   //POSTS
-  const postVacuum = async() =>{ 
-    const newDocRef = ref(db,"gastrobot_alpha_build");            // push(ref(db,"test")); - generates a unique key each post request
-
-    update(newDocRef,{
-      isVacuumOn:isVacuumOn,
-    }).then(()=>{
-      console.log("post request vacuum");
-    }).catch((error)=>{
-      console.log(error);
-    });
+  const postVacuum = async(newVacuumState) =>{ 
+    sendData(newVacuumState,vacuumId);
+    console.log(newVacuumState);
   }
 
   const postSpray = async(newSprayState) =>{ 
-    const newDocRef = ref(db,"gastrobot_alpha_build");            // push(ref(db,"test")); - generates a unique key each post request
-    update(newDocRef,{
-      isSprayOn:newSprayState,
-    }).then(()=>{
-      console.log("post request spray");
-    }).catch((error)=>{
-      console.log(error);
-    });
+    sendData(newSprayState,sprayId);
+    console.log(newSprayState);
   }
 
   const postFan = async(newFanState) =>{ 
-    const newDocRef = ref(db,"gastrobot_alpha_build");            
-    update(newDocRef,{
-      isFanOn:newFanState,
-    }).then(()=>{
-      console.log("post request Fan");
-    }).catch((error)=>{
-      console.log(error);
-    });
+    sendData(newFanState,fanId);
+    console.log(newFanState);
   }
 
   const postHorizontal = async() =>{ 
-    const newDocRef = ref(db,"gastrobot_alpha_build");            // push(ref(db,"test")); - generates a unique key each post request
-    update(newDocRef,{
-      cameraPanHorizontal:cameraPanHorizontal,
-    }).then(()=>{
-      console.log("post request cam horizontal");
-    }).catch((error)=>{
-      console.log(error);
-    });
+    sendData(cameraPanHorizontal,camHorizontalId);
+    console.log(cameraPanHorizontal);
   }
 
   const postVertical = async() =>{ 
-    const newDocRef = ref(db,"gastrobot_alpha_build");            // push(ref(db,"test")); - generates a unique key each post request
-    update(newDocRef,{
-      cameraPanVertical:cameraPanVertical,
-    }).then(()=>{
-      console.log("post request cam vertical");
-    }).catch((error)=>{
-      console.log(error);
-    });
+    sendData(cameraPanVertical,camVerticalId);
+    console.log(cameraPanVertical);
   }
+
   const postBotMovement = async(movementValue) =>{ 
-    const newDocRef = ref(db,"gastrobot_alpha_build");            // push(ref(db,"test")); - generates a unique key each post request
-    update(newDocRef,{
-      botMovement:movementValue,
-    }).then(()=>{
-      console.log("post request move");
-    }).catch((error)=>{
-      console.log(error);
-    });
+    sendData(movementValue,botMoveId);
+    console.log(movementValue);
   }
 
 
@@ -265,8 +431,8 @@ export default function App() {
         {/* <Button title="Vacuum" onPress={() => {}} style={styles.vacuumButton} /> */}
         <TouchableOpacity style={styles.vacuumButton} onPress={() =>{
           console.log("vacuuming");
-            setIsVacuumOn(isVacuumOn?false:true);
-            postVacuum();
+            setIsVacuumOn(!isVacuumOn);
+            postVacuum(!isVacuumOn);
         }}>
               <Image source={require('./assets/icons/vacuum.png')} style={styles.buttonImage_vacuum} />
           </TouchableOpacity>
@@ -280,14 +446,16 @@ export default function App() {
 
               postSpray(false);
               postFan(!isFanOn)
+              console.log("Fanning");
             }else{
               setIsFanOn(false);
               setIsSprayOn(!isSprayOn);
 
               postFan(false)
               postSpray(!isSprayOn);
+              console.log("Spraying");
             }
-            
+           
               
           }}>
               {/* <Image source={require('./assets/icons/spray.png')} style={styles.buttonImage_spray} /> */}
@@ -525,20 +693,12 @@ const styles = StyleSheet.create({
     padding: 10,
     elevation: 2,
   },
-  // buttonOpen: {
-  //   backgroundColor: '#F194FF',
-  //   width:50,
-  // },
-  // buttonClose: {
-  //   backgroundColor: '#e3e3e3',
-  //   width:80,
-  //   height:40,
-  // },
+
   textStyle: {
     color: 'black',
     fontWeight: 'bold',
     textAlign: 'center',
-    // fontSize: ,
+  
   },
   modalText: {
     marginBottom: 15,

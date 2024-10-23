@@ -61,6 +61,12 @@ export default function App() {
 
   const [onMove,setIsOnMove] = useState(0);
 
+  const CAMERA_MIDPOINT = 90;
+  const CAMERA_SNAP_THRESH = 40; // Define a threshold around the midpoint
+
+
+
+
   const toggleSwitch = () => {
     setisSwitchEnabled(previousState => !previousState);
     if(isSwitchEnabled){
@@ -184,48 +190,48 @@ useEffect(() => {
 
         setBatteryLevel(batt);
 
-      // Update the image based on battery level
-      if (batt > 75) {
-        setBatteryImg(require('./assets/icons/100.png'));
-      } else if (batt > 50) {
-        setBatteryImg(require('./assets/icons/75.png'));
-      } else if (batt > 25) {
-        setBatteryImg(require('./assets/icons/50.png'));
-      } else {
-        setBatteryImg(require('./assets/icons/25.png'));
-        setModalContent("Low Battery");
-        setModalImg(require('./assets/icons/warning.png'));
-        setIsRedModal(true);
-        Vibration.vibrate(100);
-        setModalVisible(true);
+      // Update the image based on battery level  
+      if (batt > 75) {                                                      //Uncomment this ++++++++++++++++++++++===
+      //   setBatteryImg(require('./assets/icons/100.png'));
+      // } else if (batt > 50) {
+      //   setBatteryImg(require('./assets/icons/75.png'));
+      // } else if (batt > 25) {
+      //   setBatteryImg(require('./assets/icons/50.png'));
+      // } else {
+      //   setBatteryImg(require('./assets/icons/25.png'));
+      //   setModalContent("Low Battery");
+      //   setModalImg(require('./assets/icons/warning.png'));
+      //   setIsRedModal(true);
+      //   Vibration.vibrate(100);
+      //   setModalVisible(true);
       }
 
 
       // For Gas Level
       if(gas < 6){
-        setModalContent("No Gas Left, You Can Enter");
-        setIsRedModal(false);
-        setModalImg(require('./assets/icons/check.png'));
-        Vibration.vibrate(100);
-        setModalVisible(true);
+        // setModalContent("No Gas Left, You Can Enter");                         //Uncomment this ++++++++++++++++++++++===
+        // setIsRedModal(false);
+        // setModalImg(require('./assets/icons/check.png'));
+        // Vibration.vibrate(100);
+        // setModalVisible(true);
       }
 
       // For IsEmpty
-      if(isEmpty){
-        setModalContent("Container Empty");
-        setModalImg(require('./assets/icons/warning.png'));
-        setIsRedModal(true);
-        Vibration.vibrate(100);
-        setModalVisible(true);
+      if(isEmpty){                                                                    //Uncomment this ++++++++++++++++++++++===
+        // setModalContent("Container Empty");
+        // setModalImg(require('./assets/icons/warning.png'));
+        // setIsRedModal(true);
+        // Vibration.vibrate(100);
+        // setModalVisible(true);
       }
 
       // For haveObstacles
       if(haveObstacle){
-        setModalContent("Obstacle present behind");
-        setModalImg(require('./assets/icons/warning.png'));
-        setIsRedModal(true);
-        Vibration.vibrate(100);
-        setModalVisible(true);
+        // setModalContent("Obstacle detected on the rear");                         //Uncomment this ++++++++++++++++++++++===
+        // setModalImg(require('./assets/icons/warning.png'));
+        // setIsRedModal(true);
+        // Vibration.vibrate(100);
+        // setModalVisible(true);
       }
 
 
@@ -239,6 +245,8 @@ useEffect(() => {
   }
 }, [token]);
 
+
+// ----------- This is for the Firebase connection which is not needed if using Arduino cloud-------
   // useEffect(()=>{
   //   // const movementRef = ref(db,"gastrobot_alpha_build/botMovement"); 
   //   const batteryRef = ref(db,"gastrobot_alpha_build/batteryLevel");
@@ -317,7 +325,7 @@ useEffect(() => {
   //   }
 
   // },[db]);
-
+// -----------------------------------------------------------------------------------------------
 
   //POSTS
   const postVacuum = async(newVacuumState) =>{ 
@@ -418,7 +426,7 @@ useEffect(() => {
         {/* <Text style={styles.status}>Container: {isContainerEmpty}</Text> */}
         <Switch
           trackColor={{false: 'red', true: 'green' }}
-          thumbColor={isSwitchEnabled ? '#f5dd4b' : '#f5dd4b'}
+          thumbColor={isSwitchEnabled ? 'white' : 'white'}
           ios_backgroundColor="#3e3e3e"
           onValueChange={toggleSwitch}  
           value={isSwitchEnabled}
@@ -427,7 +435,7 @@ useEffect(() => {
           
         
 
-      <View style={styles.vacuumButtonContainer} >
+      <View style={[styles.vacuumButtonContainer,{opacity:isVacuumOn? 0.3:1}]} >
         {/* <Button title="Vacuum" onPress={() => {}} style={styles.vacuumButton} /> */}
         <TouchableOpacity style={styles.vacuumButton} onPress={() =>{
           console.log("vacuuming");
@@ -438,7 +446,7 @@ useEffect(() => {
           </TouchableOpacity>
       </View>
 
-      <View style={styles. sprayButtonContainer}>
+      <View style={[styles.sprayButtonContainer,{opacity:isSprayOn||isFanOn? 0.3:1}]}>
           <TouchableOpacity style={styles.sprayButton} onPress={() => {
             if(isSwitchEnabled){
               setIsSprayOn(false);
@@ -466,11 +474,17 @@ useEffect(() => {
 
       <Slider 
         style={styles.sliderHorizontal} 
-        minimumValue={0} 
-        maximumValue={180}
+        minimumValue={180} 
+        maximumValue={0}
         value={cameraPanHorizontal}
         onValueChange={(value)=>{
-          setCameraPanHorizontal(value);
+          // if(Math.abs(value - CAMERA_MIDPOINT) < CAMERA_SNAP_THRESH){
+            // setCameraPanHorizontal(CAMERA_MIDPOINT);
+          if(Math.abs(value - CAMERA_MIDPOINT) < CAMERA_SNAP_THRESH && cameraPanHorizontal !== CAMERA_MIDPOINT){
+            setCameraPanHorizontal(CAMERA_MIDPOINT);
+          }else{
+            setCameraPanHorizontal(value);
+          }
           postHorizontal();
         }}
         minimumTrackTintColor="#00ffe1" 
@@ -482,8 +496,8 @@ useEffect(() => {
 
       <Slider 
         style={styles.sliderVertical} 
-        minimumValue={0} 
-        maximumValue={180} 
+        minimumValue={180} 
+        maximumValue={0} 
         value={cameraPanVertical}
         onValueChange={(value)=>{
           setCameraPanVertical(value);

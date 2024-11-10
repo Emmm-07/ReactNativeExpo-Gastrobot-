@@ -4,7 +4,7 @@
     "slug": "GastroBotApp",
     "version": "1.0.0",
     "orientation": "landscape",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/icons/GastroBotIcon.png",
     "userInterfaceStyle": "dark",
     "androidStatusBar": {
       "hidden": true
@@ -28,7 +28,7 @@
         "hidden": true
       },
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/icons/GastroBotIcon.png",
         "backgroundColor": "#ffffff"
       },
       "package": "com.emmm.GastroBotApp"

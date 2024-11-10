@@ -42,8 +42,10 @@ export default function App() {
   const [cameraPanVertical,setCameraPanVertical] = useState(90);
   const [botMovement, setBotMovement] = useState(null);
   const [batteryLevel, setBatteryLevel] = useState(null);
-  const [isContainerEmpty, setisContainerEmpty] = useState(null);
-  const [haveObstacle, setHaveObstacle] = useState(null);
+  const [isContainerEmpty, setisContainerEmpty] = useState(false);
+  const [haveObstacle, setHaveObstacle] = useState(false);
+  const [isLedOn, setIsLedOn] = useState(false);
+
 
   const [isVacuumOn,setIsVacuumOn] = useState(false);
   const [isSprayOn,setIsSprayOn] = useState(false);
@@ -61,14 +63,12 @@ export default function App() {
 
   const [onMove,setIsOnMove] = useState(0);
 
-  const CAMERA_MIDPOINT = 90;
-  const CAMERA_SNAP_THRESH = 40; // Define a threshold around the midpoint
-
 
 
 
   const toggleSwitch = () => {
     setisSwitchEnabled(previousState => !previousState);
+    console.log(String("isSwitchOn toggle: "+isSwitchEnabled));
     if(isSwitchEnabled){
       setSprayOrFanImg(require('./assets/icons/spray.png'));
     }else{
@@ -175,6 +175,8 @@ useEffect(() => {
   if (token) {
     const interval = setInterval(async () => {
       const jsonString = await fetchData(gasBattIsemptyObstacleId); // Replace with your API call function
+      
+
       try {
         console.log(jsonString);
         const jsonData = JSON.parse(jsonString);
@@ -182,7 +184,7 @@ useEffect(() => {
         const gas = jsonData.gas;
         const isEmpty  = jsonData.container;
         const haveObstacle = jsonData.obstacle;
-
+        const isWifiConnected = jsonData.isWifiConnected; //Changed
         console.log('Battery Level:', batt);
         console.log('Gas Level:', gas);
         console.log('Is Container Empty:', isEmpty);
@@ -190,50 +192,58 @@ useEffect(() => {
 
         setBatteryLevel(batt);
 
+      
+      // batt=90
       // Update the image based on battery level  
       if (batt > 75) {                                                      //Uncomment this ++++++++++++++++++++++===
-      //   setBatteryImg(require('./assets/icons/100.png'));
-      // } else if (batt > 50) {
-      //   setBatteryImg(require('./assets/icons/75.png'));
-      // } else if (batt > 25) {
-      //   setBatteryImg(require('./assets/icons/50.png'));
-      // } else {
-      //   setBatteryImg(require('./assets/icons/25.png'));
-      //   setModalContent("Low Battery");
-      //   setModalImg(require('./assets/icons/warning.png'));
-      //   setIsRedModal(true);
-      //   Vibration.vibrate(100);
-      //   setModalVisible(true);
+        setBatteryImg(require('./assets/icons/100.png'));
+      } else if (batt > 50) {
+        setBatteryImg(require('./assets/icons/75.png'));
+      } else if (batt > 25) {
+        setBatteryImg(require('./assets/icons/50.png'));
+      } else {
+        setBatteryImg(require('./assets/icons/25.png'));
+        setModalContent("Low Battery");
+        setModalImg(require('./assets/icons/warning.png'));
+        setIsRedModal(true);
+        Vibration.vibrate(100);
+        setModalVisible(true);
       }
 
 
+      // isSwitchEnabled = false;
+      // gas=15
       // For Gas Level
-      if(gas < 6){
-        // setModalContent("No Gas Left, You Can Enter");                         //Uncomment this ++++++++++++++++++++++===
-        // setIsRedModal(false);
-        // setModalImg(require('./assets/icons/check.png'));
-        // Vibration.vibrate(100);
-        // setModalVisible(true);
+      console.log(String("isSwitchOn: "+isSwitchEnabled));
+      if(isSwitchEnabled && gas < 30){                    //Changed
+        setModalContent("No Gas Left, You Can Enter");                         //Uncomment this ++++++++++++++++++++++===
+        setIsRedModal(false);
+        setModalImg(require('./assets/icons/check.png'));
+        Vibration.vibrate(100);
+        setModalVisible(true);
       }
-
+      
+      // isEmpty =true;
       // For IsEmpty
       if(isEmpty){                                                                    //Uncomment this ++++++++++++++++++++++===
-        // setModalContent("Container Empty");
-        // setModalImg(require('./assets/icons/warning.png'));
-        // setIsRedModal(true);
-        // Vibration.vibrate(100);
-        // setModalVisible(true);
+        setModalContent("Container Empty");
+        setModalImg(require('./assets/icons/warning.png'));
+        setIsRedModal(true);
+        Vibration.vibrate(100);
+        setModalVisible(true);
       }
 
+      // haveObstacle=true;
       // For haveObstacles
       if(haveObstacle){
-        // setModalContent("Obstacle detected on the rear");                         //Uncomment this ++++++++++++++++++++++===
-        // setModalImg(require('./assets/icons/warning.png'));
-        // setIsRedModal(true);
-        // Vibration.vibrate(100);
-        // setModalVisible(true);
+        setModalContent("Obstacle behind");                         //Uncomment this ++++++++++++++++++++++===
+        setModalImg(require('./assets/icons/warning.png'));
+        setIsRedModal(true);
+        Vibration.vibrate(100);
+        setModalVisible(true);
       }
 
+      setIsLedOn(isWifiConnected);
 
       
       } catch (error) {
@@ -243,7 +253,7 @@ useEffect(() => {
 
     return () => clearInterval(interval); // Cleanup on unmount
   }
-}, [token]);
+}, [token,isSwitchEnabled]);
 
 
 // ----------- This is for the Firebase connection which is not needed if using Arduino cloud-------
@@ -293,17 +303,17 @@ useEffect(() => {
   //     }
   //   });
 
-  //   onValue(obstacleRef,(snapshot)=>{
-  //     setHaveObstacle(snapshot.val());
-  //     const haveObs = snapshot.val()
-  //     if(haveObs){
-  //       setModalContent("Obstacle present behind");
-  //       setModalImg(require('./assets/icons/warning.png'));
-  //       setIsRedModal(true);
-  //       Vibration.vibrate(100);
-  //       setModalVisible(true);
-  //     }
-  //   });
+    // onValue(obstacleRef,(snapshot)=>{
+    //   setHaveObstacle(snapshot.val());
+    //   const haveObs = snapshot.val()
+    //   if(haveObs){
+    //     setModalContent("Obstacle behind");
+    //     setModalImg(require('./assets/icons/warning.png'));
+    //     setIsRedModal(true);
+    //     Vibration.vibrate(100);
+    //     setModalVisible(true);
+    //   }
+    // });
 
   //   onValue(gasRef,(snapshot)=>{
   //     setisContainerEmpty(snapshot.val());
@@ -365,7 +375,10 @@ useEffect(() => {
     <StatusBar hidden={true} />
     <View style={styles.iframeContainer}> 
       <WebView 
-        source={{ uri: 'https://img.freepik.com/free-photo/grunge-black-concrete-textured-background_53876-124541.jpg?t=st=1726626990~exp=1726630590~hmac=62feb9e684d793cf1fb62bc523b9412efe30a7bb4462bd18aaad175fbf87f56b&w=1060' }} 
+        source={{ uri: 'http://192.168.43.10:81/stream' }} 
+        // http://192.168.43.10:81/stream
+        // http://172.20.34.55:81/stream
+        // https://img.freepik.com/free-photo/grunge-black-concrete-textured-background_53876-124541.jpg?t=st=1726626990~exp=1726630590~hmac=62feb9e684d793cf1fb62bc523b9412efe30a7bb4462bd18aaad175fbf87f56b&w=1060
         style={styles.webview}
         scrollEnabled={false}
       />
@@ -422,6 +435,7 @@ useEffect(() => {
             </TouchableOpacity>
         <View style={styles.battery}>
           <Image source={batteryImg} style={styles.batteryIcon} />
+          <View style={[styles.wifiIndicator,{ backgroundColor: isLedOn ? 'yellow' : 'darkgray' },]}/>
         </View>
         {/* <Text style={styles.status}>Container: {isContainerEmpty}</Text> */}
         <Switch
@@ -431,6 +445,7 @@ useEffect(() => {
           onValueChange={toggleSwitch}  
           value={isSwitchEnabled}
         />
+
       </View>
           
         
@@ -472,32 +487,28 @@ useEffect(() => {
           </TouchableOpacity>
       </View>
 
-      <Slider 
-        style={styles.sliderHorizontal} 
-        minimumValue={180} 
-        maximumValue={0}
-        value={cameraPanHorizontal}
-        onValueChange={(value)=>{
-          // if(Math.abs(value - CAMERA_MIDPOINT) < CAMERA_SNAP_THRESH){
-            // setCameraPanHorizontal(CAMERA_MIDPOINT);
-          if(Math.abs(value - CAMERA_MIDPOINT) < CAMERA_SNAP_THRESH && cameraPanHorizontal !== CAMERA_MIDPOINT){
-            setCameraPanHorizontal(CAMERA_MIDPOINT);
-          }else{
+        <Slider 
+          style={styles.sliderHorizontal} 
+          minimumValue={0} 
+          maximumValue={180}
+          step={50}
+          value={cameraPanHorizontal}
+          onValueChange={(value)=>{
             setCameraPanHorizontal(value);
-          }
-          postHorizontal();
-        }}
-        minimumTrackTintColor="#00ffe1" 
-        maximumTrackTintColor="#00ffe1" 
-        thumbTintColor="#278f83" 
-        thumbStyle={styles.thumb} // Custom thumb styles
-        trackStyle={styles.track} // Custom track styles 
-      />
-
+            postHorizontal();
+          }}
+          minimumTrackTintColor="#00ffe1" 
+          maximumTrackTintColor="#00ffe1" 
+          thumbTintColor="white" 
+          thumbStyle={styles.thumb} // Custom thumb styles
+          trackStyle={styles.track} // Custom track styles 
+        />
+      
       <Slider 
         style={styles.sliderVertical} 
-        minimumValue={180} 
-        maximumValue={0} 
+        minimumValue={0} 
+        maximumValue={180} 
+        step={50}
         value={cameraPanVertical}
         onValueChange={(value)=>{
           setCameraPanVertical(value);
@@ -505,7 +516,7 @@ useEffect(() => {
         }}
         minimumTrackTintColor="#00ffe1" 
         maximumTrackTintColor="#00ffe1" 
-        thumbTintColor="#278f83" 
+        thumbTintColor="white" 
         thumbStyle={styles.thumb} // Custom thumb styles
         trackStyle={styles.track} // Custom track styles 
       />
@@ -567,7 +578,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 10,
     left: 30,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'transparent',
     paddingLeft: 10,
     paddingRight: 10,
     borderRadius: 5,
@@ -655,10 +666,11 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 50,
     left: '50%',
-    transform: [{ translateX: -100 }],
+    transform: [{ translateX: -100 },  { rotate: '180deg' }],
     width: 200,
     height: 80,
     backgroundColor: 'transparent',
+    // zIndex:-2,
   },
 
 
@@ -680,7 +692,7 @@ const styles = StyleSheet.create({
     borderColor:'red',
   },
   track: {
-    height: 10, // Height of the track
+    height: 50, // Height of the track
     borderRadius: 5, // Rounds the track corners
   },
 
@@ -719,6 +731,14 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color:'white',
   },
+  wifiIndicator:{
+    position:'absolute',
+    height:30,
+    width:30,
+    borderRadius:30,
+    top:60,
+    left:5,
+  }
 
 });
 

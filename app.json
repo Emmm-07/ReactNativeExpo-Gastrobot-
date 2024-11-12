@@ -1,5 +1,5 @@
 {
-  "expo": {
+  "expo": { 
     "name": "GastroBotApp",
     "slug": "GastroBotApp",
     "version": "1.0.0",
@@ -22,6 +22,8 @@
       }
     },
     "android": {
+      "permissions": ["INTERNET"],
+      "networkSecurityConfig": "./android/app/src/main/res/xml/network_security_config.xml",
       "statusBar": {
         "barStyle": "light-content",
         "backgroundColor": "#000000",

@@ -1,4 +1,4 @@
-import { View,Text,Button,Image,StyleSheet } from "react-native";
+import { View,Text,Button,Image,StyleSheet,TextInput,Alert } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 
 
@@ -10,8 +10,11 @@ const Home = () => {
             <Text>
                 Hello
             </Text>
+            <TextInput>Hell</TextInput>
             <Button title="Click here"
-                onPress={()=>navigation.navigate("Controller")}
+                onPress={()=>{
+                    Alert.alert('Error', 'Please fill in all fields.');
+                    navigation.navigate("Controller")}}
                 style={styles.button}
             > 
             </Button>

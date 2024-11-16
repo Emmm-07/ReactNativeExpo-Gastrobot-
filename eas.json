@@ -1,0 +1,34 @@
+
+
+{
+  "cli": {
+    "version": ">= 11.0.3"
+  },
+  "build": {
+    "preview": {
+      "env": {
+        "CLIENT_ID": "hkcUdmD1RoGXBAFy8pDxmXfLzsN6U2KM",
+        "CLIENT_SECRET": "PAQYP9gF9pqfzy9fIdMqbqsh7Q01WWYERIF8T3X2iZR5LXo8Zffr2gn14QBQTLgs"
+      },
+      "android": {
+        "buildType": "apk"
+      }
+    },
+    "preview2": {
+      "android": {
+        "gradleCommand": ":app:assembleRelease"
+      }
+    },
+    "preview3": {
+      "developmentClient": true
+    },
+    "preview4": {
+      "distribution": "internal"
+    },
+    "production": {}
+  },
+
+  "submit": {
+    "production": {}
+  }
+}

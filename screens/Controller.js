@@ -62,8 +62,9 @@ export default function Controller() {
   const [modalContent,setModalContent] = useState("");
   const [isRedModal,setIsRedModal] = useState(true);
 
-  const [onMove,setIsOnMove] = useState(0);
-
+  var didGasNotif = false;
+  const [moveDownDisabled,setMoveDownDisabled] = useState(false);
+  const [sprayerDisabled,setSprayerDisabled] = useState(false);
 
 
 
@@ -173,6 +174,7 @@ async function sendData(newValue,propertyId) {
 
 
 useEffect(() => {
+  // Data Retreival
   if (token) {
     const interval = setInterval(async () => {
       const jsonString = await fetchData(gasBattIsemptyObstacleId); // Replace with your API call function
@@ -216,35 +218,53 @@ useEffect(() => {
       // gas=15
       // For Gas Level
       console.log(String("isSwitchOn: "+isSwitchEnabled));
-      if(isSwitchEnabled && gas < 30){                    //Changed
-        setModalContent("No Gas Left, You Can Enter");                         //Uncomment this ++++++++++++++++++++++===
-        setIsRedModal(false);
-        setModalImg(require('../assets/icons/check.png'));
-        Vibration.vibrate(100);
-        setModalVisible(true);
+      if(gas < 30){                    //Changed
+          setGasIndicImg(require('../assets/icons/safe.png'));
+          console.log("gas low");
+          if(isSwitchEnabled && !didGasNotif){
+            didGasNotif = true;
+            setModalContent("No Gas Left, You Can Enter");                         //Uncomment this ++++++++++++++++++++++===
+            setIsRedModal(false);
+            setModalImg(require('../assets/icons/check.png'));
+            Vibration.vibrate(100);
+            setModalVisible(true);
+          } 
+      }else{
+        setGasIndicImg(require('../assets/icons/not_safe.png'));
+        console.log("gas high");
+        didGasNotif = false;
       }
+
+    
       
       // isEmpty =true;
       // For IsEmpty
-      if(isEmpty){                                                                    //Uncomment this ++++++++++++++++++++++===
+      if(isEmpty){         
+        setSprayerDisabled(true);                                                           //Uncomment this ++++++++++++++++++++++===
         setModalContent("Container Empty");
         setModalImg(require('../assets/icons/warning.png'));
         setIsRedModal(true);
         Vibration.vibrate(100);
         setModalVisible(true);
+      }else{
+        setSprayerDisabled(false);  
       }
 
       // haveObstacle=true;
       // For haveObstacles
       if(haveObstacle){
+        setMoveDownDisabled(true);
         setModalContent("Obstacle behind");                         //Uncomment this ++++++++++++++++++++++===
         setModalImg(require('../assets/icons/warning.png'));
         setIsRedModal(true);
         Vibration.vibrate(100);
         setModalVisible(true);
+        
+      }else{
+        setMoveDownDisabled(false);
       }
 
-      setIsLedOn(isWifiConnected);
+      // setIsLedOn(isWifiConnected);
 
       
       } catch (error) {
@@ -385,7 +405,7 @@ useEffect(() => {
       />
       
       <View style={styles.statusOverlay}>
-          <TouchableOpacity style={styles.upButton} onPressIn={() => {
+          <TouchableOpacity style={styles.upButton}  onPressIn={() => {
             console.log('Up');
             setBotMovement(1);
             postBotMovement(1);
@@ -394,7 +414,9 @@ useEffect(() => {
           onPressOut={() => {
             setBotMovement(0);
             postBotMovement(0);
+            
           }}
+          disabled={false}
           >
               <Image source={require('../assets/icons/up.png')} style={styles.buttonImage} />
             </TouchableOpacity>
@@ -431,6 +453,7 @@ useEffect(() => {
                 setBotMovement(0);
                 postBotMovement(0);
             }}
+            disabled={moveDownDisabled}
             >
               <Image source={require('../assets/icons/down.png')} style={styles.buttonImage} />
             </TouchableOpacity>
@@ -481,9 +504,10 @@ useEffect(() => {
               postSpray(!isSprayOn);
               console.log("Spraying");
             }
-           
-              
-          }}>
+          
+          }}
+          disabled={sprayerDisabled}
+          >
               {/* <Image source={require('./assets/icons/spray.png')} style={styles.buttonImage_spray} /> */}
               <Image source={sprayOrFanImg} style={styles.buttonImage_spray} />
 

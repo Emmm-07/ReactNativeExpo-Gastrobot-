@@ -4,25 +4,17 @@ import { KeyboardAvoidingView, StyleSheet, Text, TextInput, TouchableOpacity, Vi
 import auth from "../firebaseConfig"
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword,signOut } from 'firebase/auth'
 
-const LoginScreen = () => {
+const LoginScreen = ({handleLogin}) => {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [checkPassword,setCheckPassword] = useState('');
+  const [confirmPassword,setConfirmPassword] = useState('');
 
   const [isLogin,setIsLogin] = useState(true);
   const [showPassword,setShowPassword] = useState(false);
   const [showPassword2,setShowPassword2] = useState(false);
   const navigation = useNavigation()
 
-  useEffect(() => {
-    // const unsubscribe = auth.onAuthStateChanged(user => {
-    //   if (user) {
-        // navigation.replace("Home")
-    //   }
-    // })
 
-    // return unsubscribe
-  }, [])
 
   const handleSignUp = () => {
     if (password.length < 6) {
@@ -36,7 +28,7 @@ const LoginScreen = () => {
     return;
   }
   // Check if the passwords match
-  if (password !== checkPassword) {
+  if (password !== confirmPassword) {
       alert("Passwords do not match!");
       return;
   }
@@ -49,15 +41,15 @@ const LoginScreen = () => {
 
   }
 
-  const handleLogin = () => {
-    signInWithEmailAndPassword(auth, email, password)
-      .then(userCredentials => {
-        const user = userCredentials.user;
-        console.log('Logged in with:', user.email);
-        navigation.navigate("Controller");
-      })
-      .catch(error => alert(error.message))
-  }
+  // const handleLogin = () => {
+  //   signInWithEmailAndPassword(auth, email, password)
+  //     .then(userCredentials => {
+  //       const user = userCredentials.user;
+  //       console.log('Logged in with:', user.email);
+  //       navigation.navigate("Controller");
+  //     })
+  //     .catch(error => alert(error.message))
+  // }
 
   return (
     
@@ -89,9 +81,9 @@ const LoginScreen = () => {
 
 
         {!isLogin && <><TextInput
-          placeholder="Check Password"
-          value={checkPassword}
-          onChangeText={text => setCheckPassword(text)}
+          placeholder="Confirm Password"
+          value={confirmPassword}
+          onChangeText={text => setConfirmPassword(text)}
           style={styles.input}
           secureTextEntry = {showPassword2}
         />
@@ -104,7 +96,7 @@ const LoginScreen = () => {
          </>
         }
          <Text style={{fontSize:12,marginTop:10,marginRight:20,textAlign:"right"}} >{isLogin?"Don't have an account yet? ":"Already have an account? "}
-              <Text style={styles.haveAccountText} onPress={()=>setIsLogin(!isLogin)}>{isLogin?"Register":"Login"}</Text>
+              <Text style={styles.haveAccountText} onPress={()=>{setIsLogin(!isLogin);setPassword('');setEmail('')}}>{isLogin?"Register":"Login"}</Text>
          </Text>
 
       </View>
@@ -112,7 +104,7 @@ const LoginScreen = () => {
       
       <View style={styles.buttonContainer}>
         <TouchableOpacity
-          onPress={isLogin?handleLogin:handleSignUp}
+          onPress={isLogin?()=>handleLogin(auth,email,password):handleSignUp}
           style={[styles.button, !isLogin&&styles.buttonOutline]}
         >
         <Text style={isLogin?styles.buttonText:styles.buttonOutlineText}>{isLogin?"Login":"Register"}</Text>
@@ -138,7 +130,7 @@ const styles = StyleSheet.create({
     backgroundColor:"white"
   },
   inputContainer: {
-    width: '80%'
+    width: '60%'
   },
   input: {
     backgroundColor: '#f6f6f6',
@@ -146,9 +138,10 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 10,
     marginTop: 5,
+
   },
   buttonContainer: {
-    width: '60%',
+    width: '50%',
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 20,

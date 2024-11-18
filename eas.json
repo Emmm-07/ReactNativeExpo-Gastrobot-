@@ -8,7 +8,16 @@
     "preview": {
       "env": {
         "CLIENT_ID": "hkcUdmD1RoGXBAFy8pDxmXfLzsN6U2KM",
-        "CLIENT_SECRET": "PAQYP9gF9pqfzy9fIdMqbqsh7Q01WWYERIF8T3X2iZR5LXo8Zffr2gn14QBQTLgs"
+        "CLIENT_SECRET": "PAQYP9gF9pqfzy9fIdMqbqsh7Q01WWYERIF8T3X2iZR5LXo8Zffr2gn14QBQTLgs",
+        
+        "FIREBASE_KEY": "AIzaSyBRNrAXOzpPHaAVl64NrnJaHvi57rvo4Pw",
+        "FIREBASE_DOMAIN": "gastrobot-mit-firebase.firebaseapp.com",
+        "FIREBASE_DATABASE": "https://gastrobot-mit-firebase-default-rtdb.firebaseio.com",
+        "FIREBASE_PROJECT_ID": "gastrobot-mit-firebase",
+        "FIREBASE_STORAGE_BUCKET": "gastrobot-mit-firebase.appspot.com",
+        "FIREBASE_SENDER_ID": "1029345787830",
+        "FIREBASE_APP_ID": "1:1029345787830:web:19de940ff7432f7e6fcb17",
+        "FIREBASE_MEASUREMENT_ID": "G-84GCPWGK69"
       },
       "android": {
         "buildType": "apk"

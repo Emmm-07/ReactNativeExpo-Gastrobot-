@@ -17,7 +17,7 @@ import axios from 'axios';
 
 
 
-export default function Controller() {
+export default function Controller({handleLogout}) {
   const [token, setToken] = useState(null);
   const [data, setData] = useState(null);
   const config = Constants.manifest?.extra || Constants.expoConfig?.extra;
@@ -513,7 +513,9 @@ useEffect(() => {
 
           </TouchableOpacity>
       </View>
-
+      <TouchableOpacity onPress={()=>{handleLogout();console.log("logout");}} style={styles.logoutButtonContainer}>
+        <Image  source={require('../assets/icons/logoutIcon.png')} style={styles.logoutButton} />
+      </TouchableOpacity>
         <Slider 
           style={styles.sliderHorizontal} 
           minimumValue={0} 
@@ -773,6 +775,24 @@ const styles = StyleSheet.create({
     borderRadius:30,
     top:50,
     left:5,
+  },
+  logoutButtonContainer:{
+    width:50,
+    height:50,
+  
+    position:"absolute",
+    top:10,
+    right:10,
+  },
+  logoutButton:{
+    position:'absolute',
+    width:40,
+    height:40,
+    // top:10,
+    // right:10,
+    // zIndex:2,
+
+
   }
 
 });

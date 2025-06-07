@@ -51,38 +51,7 @@ const App = () => {
     return currentTime - parseInt(loginTime) < LOGIN_EXPIRY;
   };
 
-  // Login handler
-  const handleLogin = async (auth, email, password) => {
-    if (!email || !password) {
-      alert("Please provide both email and password.");
-      return;
-    }
-    console.log("email:" + email);
-    console.log("password:" + password);
-
-    try {
-      // Perform the login
-      const userCredentials = await signInWithEmailAndPassword(auth, email, password);
-      const user = userCredentials.user;
-      const currentTime = new Date().getTime();
-
-      console.log('Logged in with:', user.email);
-
-      // Await the ID token correctly
-      const token = await user.getIdToken();
-      console.log("Login token: ", token);
-
-      // Store token and other data in AsyncStorage
-      await AsyncStorage.setItem("authToken", token);
-      await AsyncStorage.setItem("loginTime", currentTime.toString());
-
-      // alert("ID token: " + token);
-      setIsAuthenticated(true); // User authenticated
-    } catch (error) {
-      console.error("Login error:", error.message);
-      alert(error.message);
-    }
-  };
+  
 
   // Logout handler
   const handleLogout = async () => {
@@ -123,7 +92,7 @@ const App = () => {
               contentStyle: { paddingTop: 0 }, // Ensures no extra padding or space is added
             }}
           >
-            {(props) => <LoginScreen {...props} handleLogin={handleLogin} />}
+            {(props) => <LoginScreen isAuthenticated={isAuthenticated} setIsAuthenticated={setIsAuthenticated} {...props} />}
           </Stack.Screen>
         )}
       </Stack.Navigator>

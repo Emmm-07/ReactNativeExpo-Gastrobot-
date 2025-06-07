@@ -1,10 +1,12 @@
 import { useNavigation } from '@react-navigation/core'
 import React, { useEffect, useState } from 'react'
-import { KeyboardAvoidingView, StyleSheet, Text, TextInput, TouchableOpacity, View, Image} from 'react-native'
+import { KeyboardAvoidingView, StyleSheet, Text, TextInput, TouchableOpacity, View, Image, ActivityIndicator} from 'react-native'
 import auth from "../firebaseConfig"
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword,signOut } from 'firebase/auth'
+import Loader from './Loader'
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const LoginScreen = ({handleLogin}) => {
+const LoginScreen = ({setIsAuthenticated}) => {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword,setConfirmPassword] = useState('');
@@ -12,7 +14,9 @@ const LoginScreen = ({handleLogin}) => {
   const [isLogin,setIsLogin] = useState(true);
   const [showPassword,setShowPassword] = useState(false);
   const [showPassword2,setShowPassword2] = useState(false);
+  const [isLoading, setIsLoading] = useState(false); 
   const navigation = useNavigation()
+
 
 
 
@@ -32,14 +36,52 @@ const LoginScreen = ({handleLogin}) => {
       alert("Passwords do not match!");
       return;
   }
+  setIsLoading(true);
     createUserWithEmailAndPassword(auth, email, password)
       .then(userCredentials => {
         const user = userCredentials.user;
         console.log('Registered with:', user.email);
+        setIsLoading(false);
+        setIsLogin(!isLogin)
       })
-      .catch(error => alert(error.message))
+      .catch(error => {alert(error.message); setIsLoading(false);})
 
   }
+
+  // Login handler
+  const handleLogin = async (auth, email, password) => {
+    if (!email || !password) {
+      alert("Please provide both email and password.");
+      return;
+    }
+    console.log("email:" + email);
+    console.log("password:" + password);
+    setIsLoading(true);
+    try {
+      // Perform the login
+      const userCredentials = await signInWithEmailAndPassword(auth, email, password);
+      const user = userCredentials.user;
+      const currentTime = new Date().getTime();
+
+      console.log('Logged in with:', user.email);
+
+      // Await the ID token correctly
+      const token = await user.getIdToken();
+      console.log("Login token: ", token);
+
+      // Store token and other data in AsyncStorage
+      await AsyncStorage.setItem("authToken", token);
+      await AsyncStorage.setItem("loginTime", currentTime.toString());
+
+      // alert("ID token: " + token);
+      setIsAuthenticated(true); // User authenticated
+      setIsLoading(false); 
+    } catch (error) {
+      console.error("Login error:", error.message);
+      alert(error.message);
+      setIsLoading(false);
+    }
+  };
 
   // const handleLogin = () => {
   //   signInWithEmailAndPassword(auth, email, password)
@@ -101,13 +143,13 @@ const LoginScreen = ({handleLogin}) => {
 
       </View>
 
-      
       <View style={styles.buttonContainer}>
         <TouchableOpacity
           onPress={isLogin?()=>handleLogin(auth,email,password):handleSignUp}
           style={[styles.button, !isLogin&&styles.buttonOutline]}
         >
-        <Text style={isLogin?styles.buttonText:styles.buttonOutlineText}>{isLogin?"Login":"Register"}</Text>
+          <Text style={isLogin?styles.buttonText:styles.buttonOutlineText}>{isLogin?"Login     ":"Register     "}</Text>
+          {isLoading && <ActivityIndicator size="small" color="#333" />}
         </TouchableOpacity>
         {/* <TouchableOpacity
           onPress={handleSignUp}
@@ -147,6 +189,8 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   button: {
+    flexDirection: 'row',
+    justifyContent: 'center',
     backgroundColor: '#0782F9',
     width: '100%',
     padding: 15,
@@ -180,8 +224,8 @@ const styles = StyleSheet.create({
   },
   showPassImage:{
     zIndex:3,
-    width:50,
-    height:50,
+    width:45,
+    height:45,
     position:'absolute',
     right:20,
     bottom:0,

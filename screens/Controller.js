@@ -2,6 +2,7 @@
 //then switch to Expo Go: s
 
 //To Start APK production build: eas build -p android --profile preview
+// To deploy/tunnel the video stream  to internet:  ngrok http 192.168.43.10:81
 
 import { StatusBar } from 'expo-status-bar';
 import React from 'react';
@@ -27,6 +28,7 @@ export default function Controller({handleLogout}) {
   const gasId = "50a0388c-993c-406d-a879-ae76adec7d89"; 
   const containerId = "140b7cdc-cfb5-4675-a508-1e07995cae10"; 
   const gasBattIsemptyObstacleId = "e04a3b13-23c7-4af2-9937-9466ab0c2ca7";
+  const videoUrlId = '4ca39a03-0154-4a4f-bd90-3ec018f7e1a8'
 
   const camHorizontalId = "1f925c7d-d36b-4fc5-b3ff-fe8389432c66"; 
   const camVerticalId = "b3fbb0b6-b5e7-4b6a-8a51-6c89225cd6e6"; 
@@ -64,13 +66,23 @@ export default function Controller({handleLogout}) {
 
   var didGasNotif = false;
   const [moveDownDisabled,setMoveDownDisabled] = useState(false);
+  const [moveUpDisabled,setMoveUpDisabled] = useState(false);
   const [sprayerDisabled,setSprayerDisabled] = useState(false);
+
+  const [videoUrl,setVideoUrl] = useState('https://cdn.pixabay.com/photo/2014/06/16/23/39/black-370118_960_720.png');
+ // http://192.168.43.10:81/stream
+  // http://172.20.34.55:81/stream
+  // https://img.freepik.com/free-photo/grunge-black-concrete-textured-background_53876-124541.jpg?t=st=1726626990~exp=1726630590~hmac=62feb9e684d793cf1fb62bc523b9412efe30a7bb4462bd18aaad175fbf87f56b&w=1060
 
 
 
   const toggleSwitch = () => {
     setisSwitchEnabled(previousState => !previousState);
     console.log(String("isSwitchOn toggle: "+isSwitchEnabled));
+    if (sprayerDisabled) {
+      setSprayOrFanImg(require('../assets/icons/xspray.png'));
+      return;
+    } 
     if(isSwitchEnabled){
       setSprayOrFanImg(require('../assets/icons/spray.png'));
     }else{
@@ -111,6 +123,8 @@ export default function Controller({handleLogout}) {
             // console.log(response.data.access_token);
             console.log("new token created");
 
+            // get Video URL
+
         } catch (error) {
             console.error('Error fetching token:', error);
         }
@@ -124,8 +138,9 @@ export default function Controller({handleLogout}) {
 }, []);
 
 
-
+// ----------For Firebase setup-------------------
 async function fetchData(propertyId) {
+
   const options = {
       method: 'GET',
       url: `https://api2.arduino.cc/iot/v2/things/${thingId}/properties/${propertyId}`,
@@ -171,7 +186,37 @@ async function sendData(newValue,propertyId) {
   }
 } 
 
+useEffect(() => {
+  if (token) {
+    async function fetchVideoUrl(propertyId) {
+      const options = {
+        method: 'GET',
+        url: `https://api2.arduino.cc/iot/v2/things/${thingId}/properties/${propertyId}`,
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      };
 
+      try {
+        const response = await axios(options);
+        setVideoUrl(response.data.last_value);
+        console.log('Video Url', response.data.last_value);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      }
+    }
+
+    // Call fetchData once the token is set
+    fetchVideoUrl(videoUrlId); // Assuming videoUrl is the propertyId
+  }
+}, [token]); // This effect runs when `token` state changes
+
+
+
+
+useEffect(()=>{
+
+},[])
 
 useEffect(() => {
   // Data Retreival
@@ -185,8 +230,10 @@ useEffect(() => {
         const jsonData = JSON.parse(jsonString);
         const batt = jsonData.batt;
         const gas = jsonData.gas;
-        const isEmpty  = jsonData.container;
+        const isEmpty  = false;
+        // const isEmpty  = jsonData.container;
         const haveObstacle = jsonData.obstacle;
+        const haveObstacleFront = jsonData.obstacleFront; 
         const isWifiConnected = jsonData.isWifiConnected; //Changed
         console.log('Battery Level:', batt);
         console.log('Gas Level:', gas);
@@ -240,21 +287,28 @@ useEffect(() => {
       // isEmpty =true;
       // For IsEmpty
       if(isEmpty){         
-        setSprayerDisabled(true);                                                           //Uncomment this ++++++++++++++++++++++===
+        setSprayerDisabled(true);  
+        setSprayOrFanImg(require('../assets/icons/xspray.png'));                    //Changed                                       //Uncomment this ++++++++++++++++++++++===
         setModalContent("Container Empty");
         setModalImg(require('../assets/icons/warning.png'));
         setIsRedModal(true);
         Vibration.vibrate(100);
         setModalVisible(true);
       }else{
-        setSprayerDisabled(false);  
+        setSprayerDisabled(false);   
+                                           //Changed
+          setSprayOrFanImg(isSwitchEnabled 
+          ? require('../assets/icons/fan.png')
+          : require('../assets/icons/spray.png')) ;
+      
       }
 
       // haveObstacle=true;
       // For haveObstacles
+      // if obstacle rear
       if(haveObstacle){
         setMoveDownDisabled(true);
-        setModalContent("Obstacle behind");                         //Uncomment this ++++++++++++++++++++++===
+        setModalContent("Obstacle in Rear");                         //Uncomment this ++++++++++++++++++++++===
         setModalImg(require('../assets/icons/warning.png'));
         setIsRedModal(true);
         Vibration.vibrate(100);
@@ -263,7 +317,17 @@ useEffect(() => {
       }else{
         setMoveDownDisabled(false);
       }
-
+      // If obstacle in front
+      if(haveObstacleFront){
+        setMoveUpDisabled(true);
+        setModalContent("Obstacle in Front");                         //Uncomment this ++++++++++++++++++++++===
+        setModalImg(require('../assets/icons/warning.png'));
+        setIsRedModal(true);
+        Vibration.vibrate(100);
+        setModalVisible(true); 
+      }else{
+        setMoveUpDisabled(false);
+      }
       // setIsLedOn(isWifiConnected);
 
       
@@ -275,8 +339,14 @@ useEffect(() => {
     return () => clearInterval(interval); // Cleanup on unmount
   }
 }, [token,isSwitchEnabled]);
+// =====================================================================================
 
 
+
+
+
+
+//----------For Firebase setup-------------------
 // ----------- This is for the Firebase connection which is not needed if using Arduino cloud-------
   // useEffect(()=>{
   //   // const movementRef = ref(db,"gastrobot_alpha_build/botMovement"); 
@@ -396,10 +466,8 @@ useEffect(() => {
     <StatusBar hidden={true} />
     <View style={styles.iframeContainer}> 
       <WebView 
-        source={{ uri: 'https://img.freepik.com/free-photo/grunge-black-concrete-textured-background_53876-124541.jpg?t=st=1726626990~exp=1726630590~hmac=62feb9e684d793cf1fb62bc523b9412efe30a7bb4462bd18aaad175fbf87f56b&w=1060' }} 
-        // http://192.168.43.10:81/stream
-        // http://172.20.34.55:81/stream
-        // https://img.freepik.com/free-photo/grunge-black-concrete-textured-background_53876-124541.jpg?t=st=1726626990~exp=1726630590~hmac=62feb9e684d793cf1fb62bc523b9412efe30a7bb4462bd18aaad175fbf87f56b&w=1060
+        source={{ uri: videoUrl }} 
+       
         style={styles.webview}
         scrollEnabled={false}
       />
@@ -416,9 +484,9 @@ useEffect(() => {
             postBotMovement(0);
             
           }}
-          disabled={false}
+          disabled={moveUpDisabled}
           >
-              <Image source={require('../assets/icons/up.png')} style={styles.buttonImage} />
+              <Image source={moveUpDisabled?require('../assets/icons/xUp.png') : require('../assets/icons/up.png')} style={styles.buttonImage} />
             </TouchableOpacity>
             <TouchableOpacity style={styles.leftButton} onPressIn={() => {
                 console.log('Left');
@@ -452,10 +520,10 @@ useEffect(() => {
               onPressOut={() => {
                 setBotMovement(0);
                 postBotMovement(0);
-            }}
-            disabled={moveDownDisabled}
+              }}
+              disabled={moveDownDisabled}
             >
-              <Image source={require('../assets/icons/down.png')} style={styles.buttonImage} />
+              <Image source={moveDownDisabled?require('../assets/icons/xdown.png') : require('../assets/icons/down.png')} style={styles.buttonImage} />
             </TouchableOpacity>
         <View style={styles.battery}>
           <Image source={batteryImg} style={styles.batteryIcon} />

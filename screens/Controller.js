@@ -24,9 +24,7 @@ export default function Controller({handleLogout}) {
   const config = Constants.manifest?.extra || Constants.expoConfig?.extra;
   const thingId = "28ade428-abc5-47d9-9e9f-b27d536e584a";//"d93de402-8b61-46de-bfb1-4a945667cf11"; // Replace with your Thing ID
   //Property IDs
-  const batteryId = "0b1b5f2b-1d60-419e-b398-2e88ec6a601d"; 
-  const gasId = "50a0388c-993c-406d-a879-ae76adec7d89"; 
-  const containerId = "140b7cdc-cfb5-4675-a508-1e07995cae10"; 
+
   const gasBattIsemptyObstacleId = "e04a3b13-23c7-4af2-9937-9466ab0c2ca7";
   const videoUrlId = '4ca39a03-0154-4a4f-bd90-3ec018f7e1a8'
 
@@ -36,23 +34,18 @@ export default function Controller({handleLogout}) {
   const sprayId = "aa667363-f977-4354-9df3-e5b162df6d02"; 
   const vacuumId = "a39cbd17-5284-4bd7-b9c2-98afe5c78f83"; 
   const botMoveId = "4243c4b3-bc27-4bab-a223-03778745946c"; 
-  const obstacleId = "49ab0a00-9ca2-4ff8-9687-5398cd7afb26"; 
 
   
 
   const [cameraPanHorizontal,setCameraPanHorizontal] = useState(90);
   const [cameraPanVertical,setCameraPanVertical] = useState(90);
   const [botMovement, setBotMovement] = useState(null);
-  const [batteryLevel, setBatteryLevel] = useState(null);
-  const [isContainerEmpty, setisContainerEmpty] = useState(false);
-  const [haveObstacle, setHaveObstacle] = useState(false);
-  const [isLedOn, setIsLedOn] = useState(false);
+
 
 
   const [isVacuumOn,setIsVacuumOn] = useState(false);
   const [isSprayOn,setIsSprayOn] = useState(false);
-  const [isFanOn,setIsFanOn] = useState(false);
-  const [sprayOrFanImg,setSprayOrFanImg] = useState(require('../assets/icons/spray.png'));
+  const [sprayImg,setsprayImg] = useState(require('../assets/icons/spray.png'));
 
   // const db = getDatabase(\\\);
   const [batteryImg,setBatteryImg] = useState(require('../assets/icons/50.png'));
@@ -79,15 +72,15 @@ export default function Controller({handleLogout}) {
   const toggleSwitch = () => {
     setisSwitchEnabled(previousState => !previousState);
     console.log(String("isSwitchOn toggle: "+isSwitchEnabled));
-    if (sprayerDisabled) {
-      setSprayOrFanImg(require('../assets/icons/xspray.png'));
-      return;
-    } 
-    if(isSwitchEnabled){
-      setSprayOrFanImg(require('../assets/icons/spray.png'));
-    }else{
-      setSprayOrFanImg(require('../assets/icons/fan.png'));
+
+    if(isSwitchEnabled) {
+      setsprayImg(require('../assets/icons/spray.png'));
+      setSprayerDisabled(false);
+    } else {
+      setsprayImg(require('../assets/icons/xspray.png'));
+      setSprayerDisabled(true);
     }
+    
   };
 
   //Fetch token for arduino iot
@@ -138,7 +131,7 @@ export default function Controller({handleLogout}) {
 }, []);
 
 
-// ----------For Firebase setup-------------------
+
 async function fetchData(propertyId) {
 
   const options = {
@@ -240,7 +233,6 @@ useEffect(() => {
         console.log('Is Container Empty:', isEmpty);
         console.log('haveObstacle:', haveObstacle);
 
-        setBatteryLevel(batt);
 
       
       // batt=90
@@ -288,7 +280,7 @@ useEffect(() => {
       // For IsEmpty
       if(isEmpty){         
         setSprayerDisabled(true);  
-        setSprayOrFanImg(require('../assets/icons/xspray.png'));                    //Changed                                       //Uncomment this ++++++++++++++++++++++===
+        setsprayImg(require('../assets/icons/xspray.png'));                    //Changed                                       //Uncomment this ++++++++++++++++++++++===
         setModalContent("Container Empty");
         setModalImg(require('../assets/icons/warning.png'));
         setIsRedModal(true);
@@ -296,10 +288,7 @@ useEffect(() => {
         setModalVisible(true);
       }else{
         setSprayerDisabled(false);   
-                                           //Changed
-          setSprayOrFanImg(isSwitchEnabled 
-          ? require('../assets/icons/fan.png')
-          : require('../assets/icons/spray.png')) ;
+        setsprayImg(require('../assets/icons/spray.png')) ;
       
       }
 
@@ -555,29 +544,15 @@ useEffect(() => {
           </TouchableOpacity>
       </View>
 
-      <View style={[styles.sprayButtonContainer,{opacity:isSprayOn||isFanOn? 0.3:1}]}>
+      <View style={[styles.sprayButtonContainer,{opacity:isSprayOn && !isSwitchEnabled? 0.3:1}]}>
           <TouchableOpacity style={styles.sprayButton} onPress={() => {
-            if(isSwitchEnabled){
-              setIsSprayOn(false);
-              setIsFanOn(!isFanOn);
-
-              postSpray(false);
-              postFan(!isFanOn)
-              console.log("Fanning");
-            }else{
-              setIsFanOn(false);
               setIsSprayOn(!isSprayOn);
-
-              postFan(false)
               postSpray(!isSprayOn);
-              console.log("Spraying");
-            }
-          
           }}
           disabled={sprayerDisabled}
           >
               {/* <Image source={require('./assets/icons/spray.png')} style={styles.buttonImage_spray} /> */}
-              <Image source={sprayOrFanImg} style={styles.buttonImage_spray} />
+              <Image source={sprayImg} style={styles.buttonImage_spray} />
 
           </TouchableOpacity>
       </View>

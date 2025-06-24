@@ -461,8 +461,9 @@ useEffect(() => {
         scrollEnabled={false}
       />
       
-      <View style={styles.statusOverlay}>
-          <TouchableOpacity style={styles.upButton}  onPressIn={() => {
+      {/* Fullscreen overlay for movement buttons */}
+      <View style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, width: '100%', height: '100%', pointerEvents: 'box-none'}}>
+        <TouchableOpacity style={styles.upButton}  onPressIn={() => {
             console.log('Up');
             setBotMovement(1);
             postBotMovement(1);
@@ -514,6 +515,10 @@ useEffect(() => {
             >
               <Image source={moveDownDisabled?require('../assets/icons/xdown.png') : require('../assets/icons/down.png')} style={styles.buttonImage} />
             </TouchableOpacity>
+      </View>
+
+      {/* Status overlay remains for status info only */}
+      <View style={styles.statusOverlay}>
         <View style={styles.battery}>
           <Image source={batteryImg} style={styles.batteryIcon} />
           {/* <View style={[styles.wifiIndicator,{ backgroundColor: isLedOn ? 'yellow' : 'darkgray' },]}/> */}
@@ -528,7 +533,6 @@ useEffect(() => {
           onValueChange={toggleSwitch}  
           value={isSwitchEnabled}
         />
-
       </View>
           
         
@@ -608,22 +612,13 @@ useEffect(() => {
           <Pressable
               onPress={() => setModalVisible(!modalVisible)}>
             <Text style={styles.modalText}>
-            <Image source={modalImg} style={styles.warningImage} />
-               {modalContent} </Text>
-         
-              {/* <Text style={styles.textStyle}>OK</Text> */}
+              <Image source={modalImg} style={styles.warningImage} />
+               {modalContent} 
+            </Text>
             </Pressable>
           </View>
         </View>
       </Modal>
-      {/* <Pressable
-        style={[styles.button, styles.buttonOpen]}
-        onPress={() => {
-          setModalVisible(true);
-          Vibration.vibrate(100);
-          }}>
-        <Text style={styles.textStyle}>Show Modal</Text>
-      </Pressable> */}
     </View>
   </View>
   );

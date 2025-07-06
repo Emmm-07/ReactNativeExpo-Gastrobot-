@@ -5,7 +5,7 @@
 // To deploy/tunnel the video stream  to internet:  ngrok http 192.168.43.10:81
 
 import { StatusBar } from 'expo-status-bar';
-import React from 'react';
+import React, { use } from 'react';
 import { View, Button, TouchableOpacity, StyleSheet, Image, Text, Modal,Pressable, Vibration,Switch } from 'react-native';
 
 import Slider from '@react-native-community/slider';
@@ -61,6 +61,7 @@ export default function Controller({handleLogout}) {
   const [moveDownDisabled,setMoveDownDisabled] = useState(false);
   const [moveUpDisabled,setMoveUpDisabled] = useState(false);
   const [sprayerDisabled,setSprayerDisabled] = useState(false);
+  const [isAllControlsDisabled, setIsAllControlsDisabled] = useState(false);
 
   const [videoUrl,setVideoUrl] = useState('https://cdn.pixabay.com/photo/2014/06/16/23/39/black-370118_960_720.png');
  // http://192.168.43.10:81/stream
@@ -208,8 +209,16 @@ useEffect(() => {
 
 
 useEffect(()=>{
-
-},[])
+    if(isAllControlsDisabled){
+      postVertical(0);
+      setCameraPanHorizontal(100);
+      postHorizontal(100)
+    } else {
+      setCameraPanVertical(100);
+      postVertical(100);
+    }
+   
+}, [isAllControlsDisabled])
 
 useEffect(() => {
   // Data Retreival
@@ -223,8 +232,7 @@ useEffect(() => {
         const jsonData = JSON.parse(jsonString);
         const batt = jsonData.batt;
         const gas = jsonData.gas;
-        const isEmpty  = false;
-        // const isEmpty  = jsonData.container;
+        const isEmpty  = jsonData.container;
         const haveObstacle = jsonData.obstacle;
         const haveObstacleFront = jsonData.obstacleFront; 
         const isWifiConnected = jsonData.isWifiConnected; //Changed
@@ -254,7 +262,7 @@ useEffect(() => {
 
 
       // isSwitchEnabled = false;
-      // gas=15
+      // gas
       // For Gas Level
       console.log(String("isSwitchOn: "+isSwitchEnabled));
       if(gas < 30){                    //Changed
@@ -281,6 +289,7 @@ useEffect(() => {
       if(isEmpty){         
         setSprayerDisabled(true);  
         setsprayImg(require('../assets/icons/xspray.png'));                    //Changed                                       //Uncomment this ++++++++++++++++++++++===
+        setIsAllControlsDisabled(true);
         setModalContent("Container Empty");
         setModalImg(require('../assets/icons/warning.png'));
         setIsRedModal(true);
@@ -289,7 +298,7 @@ useEffect(() => {
       }else{
         setSprayerDisabled(false);   
         setsprayImg(require('../assets/icons/spray.png')) ;
-      
+        setIsAllControlsDisabled(false)
       }
 
       // haveObstacle=true;
@@ -327,7 +336,7 @@ useEffect(() => {
 
     return () => clearInterval(interval); // Cleanup on unmount
   }
-}, [token,isSwitchEnabled]);
+}, [token, isSwitchEnabled]);
 // =====================================================================================
 
 
@@ -428,18 +437,14 @@ useEffect(() => {
     console.log(newSprayState);
   }
 
-  const postFan = async(newFanState) =>{ 
-    sendData(newFanState,fanId);
-    console.log(newFanState);
-  }
 
-  const postHorizontal = async() =>{ 
-    sendData(cameraPanHorizontal,camHorizontalId);
+  const postHorizontal = async(value) =>{ 
+    sendData(value !== undefined ? value :cameraPanHorizontal,camHorizontalId);
     console.log(cameraPanHorizontal);
   }
 
-  const postVertical = async() =>{ 
-    sendData(cameraPanVertical,camVerticalId);
+  const postVertical = async(value) =>{ 
+    sendData(value !== undefined ? value : cameraPanVertical, camVerticalId);
     console.log(cameraPanVertical);
   }
 
@@ -476,7 +481,7 @@ useEffect(() => {
           }}
           disabled={moveUpDisabled}
           >
-              <Image source={moveUpDisabled?require('../assets/icons/xUp.png') : require('../assets/icons/up.png')} style={styles.buttonImage} />
+              <Image source={moveUpDisabled || isAllControlsDisabled ?require('../assets/icons/xUp.png') : require('../assets/icons/up.png')} style={styles.buttonImage} />
             </TouchableOpacity>
             <TouchableOpacity style={styles.leftButton} onPressIn={() => {
                 console.log('Left');
@@ -487,8 +492,9 @@ useEffect(() => {
                 setBotMovement(0);
                 postBotMovement(0);
             }}
+              disabled={isAllControlsDisabled}
             >
-              <Image source={require('../assets/icons/left.png')} style={styles.buttonImage} />
+              <Image source={isAllControlsDisabled?require('../assets/icons/xLeft.png') : require('../assets/icons/left.png')} style={styles.buttonImage} />
             </TouchableOpacity>
             <TouchableOpacity style={styles.rightButton} onPressIn={() => {
                 console.log('Right');
@@ -499,8 +505,9 @@ useEffect(() => {
                 setBotMovement(0);
                 postBotMovement(0);
             }}
+              disabled={isAllControlsDisabled}
             >
-              <Image source={require('../assets/icons/right.png')} style={styles.buttonImage} />
+              <Image source={isAllControlsDisabled?require('../assets/icons/xRight.png') : require('../assets/icons/right.png')} style={styles.buttonImage} />
             </TouchableOpacity>
             <TouchableOpacity style={styles.downButton} onPressIn={() => {
                 console.log('Down');
@@ -513,7 +520,7 @@ useEffect(() => {
               }}
               disabled={moveDownDisabled}
             >
-              <Image source={moveDownDisabled?require('../assets/icons/xdown.png') : require('../assets/icons/down.png')} style={styles.buttonImage} />
+              <Image source={moveDownDisabled || isAllControlsDisabled ?require('../assets/icons/xdown.png') : require('../assets/icons/down.png')} style={styles.buttonImage} />
             </TouchableOpacity>
       </View>
 
@@ -537,13 +544,15 @@ useEffect(() => {
           
         
 
-      <View style={[styles.vacuumButtonContainer,{opacity:isVacuumOn? 0.3:1}]} >
+      <View style={[styles.vacuumButtonContainer,{opacity: isVacuumOn || isAllControlsDisabled ? 0.3:1}]} >
         {/* <Button title="Vacuum" onPress={() => {}} style={styles.vacuumButton} /> */}
         <TouchableOpacity style={styles.vacuumButton} onPress={() =>{
           console.log("vacuuming");
             setIsVacuumOn(!isVacuumOn);
             postVacuum(!isVacuumOn);
-        }}>
+        }}
+          disabled={isAllControlsDisabled}
+        >
               <Image source={require('../assets/icons/vacuum.png')} style={styles.buttonImage_vacuum} />
           </TouchableOpacity>
       </View>
@@ -560,15 +569,16 @@ useEffect(() => {
 
           </TouchableOpacity>
       </View>
-      <TouchableOpacity onPress={()=>{handleLogout();console.log("logout");}} style={styles.logoutButtonContainer}>
+      {/* <TouchableOpacity onPress={()=>{handleLogout();console.log("logout");}} style={styles.logoutButtonContainer}>
         <Image  source={require('../assets/icons/logoutIcon.png')} style={styles.logoutButton} />
-      </TouchableOpacity>
+      </TouchableOpacity> */}
         <Slider 
+          disabled={isAllControlsDisabled}
           style={styles.sliderHorizontal} 
           minimumValue={0} 
           maximumValue={180}
           step={50}
-          value={cameraPanHorizontal}
+          value={isAllControlsDisabled ? 100 : cameraPanVertical}
           onValueChange={(value)=>{
             setCameraPanHorizontal(value);
             postHorizontal();
@@ -581,11 +591,12 @@ useEffect(() => {
         />
       
       <Slider 
+        disabled={isAllControlsDisabled}
         style={styles.sliderVertical} 
         minimumValue={0} 
         maximumValue={180} 
         step={50}
-        value={cameraPanVertical}
+        value={isAllControlsDisabled ? 0 : cameraPanVertical}
         onValueChange={(value)=>{
           setCameraPanVertical(value);
           postVertical();

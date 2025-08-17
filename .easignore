@@ -1,3 +1,9 @@
 C:/Users/jmbal/AppData/
-
+C:\Users\jmbal\OneDrive\Documents\Coding Projects\ReactNative-Gastrobot-Mobile-App\ReactNativeExpo-Gastrobot-\%ProgramData%
 .env
+.idea
+.expo
+*.tar.gz
+*.log
+*.tmp
+node_modules

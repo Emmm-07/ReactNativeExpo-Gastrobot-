@@ -16,7 +16,41 @@ import { useState,useEffect } from 'react';
 import Constants from 'expo-constants';
 import axios from 'axios';
 
-
+// Image constants
+const IMAGES = {
+  // Battery icons
+  BATTERY_100: require('../assets/icons/100.png'),
+  BATTERY_75: require('../assets/icons/75.png'),
+  BATTERY_50: require('../assets/icons/50.png'),
+  BATTERY_25: require('../assets/icons/25.png'),
+  BATTERY_0: require('../assets/icons/0.png'),
+  
+  // Movement icons
+  UP: require('../assets/icons/up.png'),
+  DOWN: require('../assets/icons/down.png'),
+  LEFT: require('../assets/icons/left.png'),
+  RIGHT: require('../assets/icons/right.png'),
+  X_UP: require('../assets/icons/xUp.png'),
+  X_DOWN: require('../assets/icons/xdown.png'),
+  X_LEFT: require('../assets/icons/xLeft.png'),
+  X_RIGHT: require('../assets/icons/xRight.png'),
+  
+  // Status icons
+  SPRAY: require('../assets/icons/spray.png'),
+  X_SPRAY: require('../assets/icons/xspray.png'),
+  VACUUM: require('../assets/icons/vacuum.png'),
+  SAFE: require('../assets/icons/safe.png'),
+  NOT_SAFE: require('../assets/icons/not_safe.png'),
+  
+  // Alert icons
+  WARNING: require('../assets/icons/warning.png'),
+  CHECK: require('../assets/icons/check.png'),
+  REAR: require('../assets/icons/REAR.png'),
+  FRONT: require('../assets/icons/FRONT.png'),
+  
+  // Other icons
+  LOGOUT: require('../assets/icons/logoutIcon.png')
+};
 
 export default function Controller({handleLogout}) {
   const [token, setToken] = useState(null);
@@ -45,13 +79,13 @@ export default function Controller({handleLogout}) {
 
   const [isVacuumOn,setIsVacuumOn] = useState(false);
   const [isSprayOn,setIsSprayOn] = useState(false);
-  const [sprayImg,setsprayImg] = useState(require('../assets/icons/spray.png'));
+  const [sprayImg,setsprayImg] = useState(IMAGES.SPRAY);
 
   // const db = getDatabase(\\\);
-  const [batteryImg,setBatteryImg] = useState(require('../assets/icons/50.png'));
+  const [batteryImg,setBatteryImg] = useState(IMAGES.BATTERY_50);
 
-  const [modalImg,setModalImg] = useState(require('../assets/icons/warning.png'));
-  const [gasIndicImg,setGasIndicImg] = useState(require('../assets/icons/safe.png'));
+  const [modalImg,setModalImg] = useState(IMAGES.WARNING);
+  const [gasIndicImg,setGasIndicImg] = useState(IMAGES.SAFE);
   const [isSwitchEnabled, setisSwitchEnabled] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [modalContent,setModalContent] = useState("");
@@ -62,7 +96,10 @@ export default function Controller({handleLogout}) {
   const [moveUpDisabled,setMoveUpDisabled] = useState(false);
   const [sprayerDisabled,setSprayerDisabled] = useState(false);
   const [isAllControlsDisabled, setIsAllControlsDisabled] = useState(false);
-
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [showAlertRear, setShowAlertRear] = useState(false); 
+  const [showAlertFront, setShowAlertFront] = useState(false);
+  const [obstacleAlertImage, setObstacleAlertImage] = useState(IMAGES.REAR);
   const [videoUrl,setVideoUrl] = useState('https://cdn.pixabay.com/photo/2014/06/16/23/39/black-370118_960_720.png');
  // http://192.168.43.10:81/stream
   // http://172.20.34.55:81/stream
@@ -75,10 +112,10 @@ export default function Controller({handleLogout}) {
     console.log(String("isSwitchOn toggle: "+isSwitchEnabled));
 
     if(isSwitchEnabled) {
-      setsprayImg(require('../assets/icons/spray.png'));
+      setsprayImg(IMAGES.SPRAY);
       setSprayerDisabled(false);
     } else {
-      setsprayImg(require('../assets/icons/xspray.png'));
+      setsprayImg(IMAGES.X_SPRAY);
       setSprayerDisabled(true);
     }
     
@@ -120,7 +157,7 @@ export default function Controller({handleLogout}) {
             // get Video URL
 
         } catch (error) {
-            console.error('Error fetching token:', error);
+            console.log('Error fetching token:', error);
         }
     }
 
@@ -151,7 +188,7 @@ async function fetchData(propertyId) {
       console.log("DATA permission: "+response.data.permission);
       return response.data.last_value;
   } catch (error) {
-      console.error('Error fetching data:', error);
+      console.log('Error fetching data:', error);
       return '{}';
   }
 }
@@ -176,7 +213,7 @@ async function sendData(newValue,propertyId) {
       // fetchData(propertyId); // Refresh data after sending
 
   } catch (error) {
-    console.error('Error sending data:', error.response ? error.response.data : error.message);
+    console.log('Error sending data:', error.response ? error.response.data : error.message);
   }
 } 
 
@@ -196,14 +233,14 @@ useEffect(() => {
         setVideoUrl(response.data.last_value);
         console.log('Video Url', response.data.last_value);
       } catch (error) {
-        console.error('Error fetching data:', error);
+        console.log('Error fetching data:', error);
       }
     }
 
     // Call fetchData once the token is set
     fetchVideoUrl(videoUrlId); // Assuming videoUrl is the propertyId
   }
-}, [token]); // This effect runs when `token` state changes
+}, [isLoggedIn]); // This effect runs when `token` state changes [token]
 
 
 
@@ -228,12 +265,13 @@ useEffect(() => {
       
 
       try {
+        console.log("======================================================================================");
         console.log(jsonString);
         const jsonData = JSON.parse(jsonString);
-        const batt = jsonData.batt;
+        const batt = 90; //jsonData.batt
         const gas = jsonData.gas;
         const isEmpty  = jsonData.container;
-        const haveObstacle = jsonData.obstacle;
+        const haveObstacle = jsonData.obstacle; 
         const haveObstacleFront = jsonData.obstacleFront; 
         const isWifiConnected = jsonData.isWifiConnected; //Changed
         console.log('Battery Level:', batt);
@@ -246,15 +284,17 @@ useEffect(() => {
       // batt=90
       // Update the image based on battery level  
       if (batt > 75) {                                                      //Uncomment this ++++++++++++++++++++++===
-        setBatteryImg(require('../assets/icons/100.png'));
+        setBatteryImg(IMAGES.BATTERY_100);
       } else if (batt > 50) {
-        setBatteryImg(require('../assets/icons/75.png'));
+        setBatteryImg(IMAGES.BATTERY_75);
       } else if (batt > 25) {
-        setBatteryImg(require('../assets/icons/50.png'));
+        setBatteryImg(IMAGES.BATTERY_50);
+      } else if (batt > 1) {
+        setBatteryImg(IMAGES.BATTERY_25);
       } else {
-        setBatteryImg(require('../assets/icons/25.png'));
+        setBatteryImg(IMAGES.BATTERY_0);
         setModalContent("Low Battery");
-        setModalImg(require('../assets/icons/warning.png'));
+        setModalImg(IMAGES.WARNING);
         setIsRedModal(true);
         Vibration.vibrate(100);
         setModalVisible(true);
@@ -266,18 +306,18 @@ useEffect(() => {
       // For Gas Level
       console.log(String("isSwitchOn: "+isSwitchEnabled));
       if(gas < 30){                    //Changed
-          setGasIndicImg(require('../assets/icons/safe.png'));
+          setGasIndicImg(IMAGES.SAFE);
           console.log("gas low");
           if(isSwitchEnabled && !didGasNotif){
             didGasNotif = true;
             setModalContent("No Gas Left, You Can Enter");                         //Uncomment this ++++++++++++++++++++++===
             setIsRedModal(false);
-            setModalImg(require('../assets/icons/check.png'));
+            setModalImg(IMAGES.CHECK);
             Vibration.vibrate(100);
             setModalVisible(true);
           } 
       }else{
-        setGasIndicImg(require('../assets/icons/not_safe.png'));
+        setGasIndicImg(IMAGES.NOT_SAFE);
         console.log("gas high");
         didGasNotif = false;
       }
@@ -288,16 +328,16 @@ useEffect(() => {
       // For IsEmpty
       if(isEmpty){         
         setSprayerDisabled(true);  
-        setsprayImg(require('../assets/icons/xspray.png'));                    //Changed                                       //Uncomment this ++++++++++++++++++++++===
+        setsprayImg(IMAGES.X_SPRAY);                    //Changed                                       //Uncomment this ++++++++++++++++++++++===
         setIsAllControlsDisabled(true);
         setModalContent("Container Empty");
-        setModalImg(require('../assets/icons/warning.png'));
+        setModalImg(IMAGES.WARNING);
         setIsRedModal(true);
         Vibration.vibrate(100);
         setModalVisible(true);
       }else{
         setSprayerDisabled(false);   
-        setsprayImg(require('../assets/icons/spray.png')) ;
+        setsprayImg(IMAGES.SPRAY) ;
         setIsAllControlsDisabled(false)
       }
 
@@ -306,31 +346,26 @@ useEffect(() => {
       // if obstacle rear
       if(haveObstacle){
         setMoveDownDisabled(true);
-        setModalContent("Obstacle in Rear");                         //Uncomment this ++++++++++++++++++++++===
-        setModalImg(require('../assets/icons/warning.png'));
-        setIsRedModal(true);
-        Vibration.vibrate(100);
-        setModalVisible(true);
-        
+        setObstacleAlertImage(IMAGES.REAR);
+        setShowAlertRear(true);
       }else{
         setMoveDownDisabled(false);
+        setShowAlertRear(false);
       }
       // If obstacle in front
       if(haveObstacleFront){
         setMoveUpDisabled(true);
-        setModalContent("Obstacle in Front");                         //Uncomment this ++++++++++++++++++++++===
-        setModalImg(require('../assets/icons/warning.png'));
-        setIsRedModal(true);
-        Vibration.vibrate(100);
-        setModalVisible(true); 
+        setObstacleAlertImage(IMAGES.FRONT);
+        setShowAlertFront(true);
       }else{
         setMoveUpDisabled(false);
+        setShowAlertFront(false);
       }
       // setIsLedOn(isWifiConnected);
 
       
       } catch (error) {
-        console.error('Error parsing JSON:', error);
+        console.log('Error parsing JSON:', error);
       }
     }, 5000);
 
@@ -468,6 +503,9 @@ useEffect(() => {
       
       {/* Fullscreen overlay for movement buttons */}
       <View style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, width: '100%', height: '100%', pointerEvents: 'box-none'}}>
+        <View style={{ opacity: (showAlertRear || showAlertFront) ? 0.6 : 0, top: 110, left: 315 }}>
+            <Image source={obstacleAlertImage} style={{width: 180, height: 105}} />
+        </View>
         <TouchableOpacity style={styles.upButton}  onPressIn={() => {
             console.log('Up');
             setBotMovement(1);
@@ -481,47 +519,47 @@ useEffect(() => {
           }}
           disabled={moveUpDisabled}
           >
-              <Image source={moveUpDisabled || isAllControlsDisabled ?require('../assets/icons/xUp.png') : require('../assets/icons/up.png')} style={styles.buttonImage} />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.leftButton} onPressIn={() => {
-                console.log('Left');
-                setBotMovement(4);
-                postBotMovement(4);
+            <Image source={moveUpDisabled || isAllControlsDisabled ? IMAGES.X_UP : IMAGES.UP} style={styles.buttonImage} />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.leftButton} onPressIn={() => {
+              console.log('Left');
+              setBotMovement(4);
+              postBotMovement(4);
+          }}
+            onPressOut={() => {
+              setBotMovement(0);
+              postBotMovement(0);
+          }}
+            disabled={isAllControlsDisabled}
+          >
+            <Image source={isAllControlsDisabled ? IMAGES.X_LEFT : IMAGES.LEFT} style={styles.buttonImage} />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.rightButton} onPressIn={() => {
+              console.log('Right');
+              setBotMovement(2);
+              postBotMovement(2);
+          }}
+            onPressOut={() => {
+              setBotMovement(0);
+              postBotMovement(0);
+          }}
+            disabled={isAllControlsDisabled}
+          >
+            <Image source={isAllControlsDisabled ? IMAGES.X_RIGHT : IMAGES.RIGHT} style={styles.buttonImage} />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.downButton} onPressIn={() => {
+              console.log('Down');
+              setBotMovement(3);
+              postBotMovement(3);
+          }}
+            onPressOut={() => {
+              setBotMovement(0);
+              postBotMovement(0);
             }}
-              onPressOut={() => {
-                setBotMovement(0);
-                postBotMovement(0);
-            }}
-              disabled={isAllControlsDisabled}
-            >
-              <Image source={isAllControlsDisabled?require('../assets/icons/xLeft.png') : require('../assets/icons/left.png')} style={styles.buttonImage} />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.rightButton} onPressIn={() => {
-                console.log('Right');
-                setBotMovement(2);
-                postBotMovement(2);
-            }}
-              onPressOut={() => {
-                setBotMovement(0);
-                postBotMovement(0);
-            }}
-              disabled={isAllControlsDisabled}
-            >
-              <Image source={isAllControlsDisabled?require('../assets/icons/xRight.png') : require('../assets/icons/right.png')} style={styles.buttonImage} />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.downButton} onPressIn={() => {
-                console.log('Down');
-                setBotMovement(3);
-                postBotMovement(3);
-            }}
-              onPressOut={() => {
-                setBotMovement(0);
-                postBotMovement(0);
-              }}
-              disabled={moveDownDisabled}
-            >
-              <Image source={moveDownDisabled || isAllControlsDisabled ?require('../assets/icons/xdown.png') : require('../assets/icons/down.png')} style={styles.buttonImage} />
-            </TouchableOpacity>
+            disabled={moveDownDisabled}
+          >
+            <Image source={moveDownDisabled || isAllControlsDisabled ? IMAGES.X_DOWN : IMAGES.DOWN} style={styles.buttonImage} />
+          </TouchableOpacity>
       </View>
 
       {/* Status overlay remains for status info only */}
@@ -553,7 +591,7 @@ useEffect(() => {
         }}
           disabled={isAllControlsDisabled}
         >
-              <Image source={require('../assets/icons/vacuum.png')} style={styles.buttonImage_vacuum} />
+              <Image source={IMAGES.VACUUM} style={styles.buttonImage_vacuum} />
           </TouchableOpacity>
       </View>
 
@@ -569,16 +607,16 @@ useEffect(() => {
 
           </TouchableOpacity>
       </View>
-      {/* <TouchableOpacity onPress={()=>{handleLogout();console.log("logout");}} style={styles.logoutButtonContainer}>
-        <Image  source={require('../assets/icons/logoutIcon.png')} style={styles.logoutButton} />
-      </TouchableOpacity> */}
+      <TouchableOpacity onPress={()=>{setIsLoggedIn(!isLoggedIn);console.log("logout");}} style={styles.logoutButtonContainer}> 
+        <Image  source={IMAGES.LOGOUT} style={styles.logoutButton} />
+      </TouchableOpacity>
         <Slider 
           disabled={isAllControlsDisabled}
           style={styles.sliderHorizontal} 
           minimumValue={0} 
           maximumValue={180}
           step={50}
-          value={isAllControlsDisabled ? 100 : cameraPanVertical}
+          value={isAllControlsDisabled ? 100 : cameraPanHorizontal}
           onValueChange={(value)=>{
             setCameraPanHorizontal(value);
             postHorizontal();
@@ -835,15 +873,12 @@ const styles = StyleSheet.create({
   },
   logoutButton:{
     position:'absolute',
-    width:40,
-    height:40,
+    width:20,
+    height:20,
     // top:10,
     // right:10,
     // zIndex:2,
-
-
-  }
-
+  },
 });
 
 
